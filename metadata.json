@@ -1,0 +1,7 @@
+{
+  "name": "NovaTicket - Premium Booking Experience",
+  "description": "A high-performance ticket booking prototype featuring a queue system, real-time seat selection, and secure payment flow with a sleek Red/Purple/Dark theme.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
