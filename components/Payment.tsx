@@ -12,6 +12,57 @@ interface PaymentProps {
 const Payment: React.FC<PaymentProps> = ({ event, seats, timer, onSuccess }) => {
   const [method, setMethod] = useState<'CARD' | 'QR' | 'WALLET'>('CARD');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [cardData, setCardData] = useState({
+    number: '',
+    expiry: '',
+    cvv: ''
+  });
+
+  const formatCardNumber = (value: string) => {
+    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    const matches = v.match(/\d{4,16}/g);
+    const match = matches && matches[0] || '';
+    const parts = [];
+
+    for (let i = 0, len = match.length; i < len; i += 4) {
+      parts.push(match.substring(i, i + 4));
+    }
+
+    if (parts.length) {
+      return parts.join(' ');
+    } else {
+      return v;
+    }
+  };
+
+  const formatExpiry = (value: string) => {
+    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    if (v.length >= 2) {
+      return `${v.substring(0, 2)} / ${v.substring(2, 4)}`;
+    }
+    return v;
+  };
+
+  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCardNumber(e.target.value);
+    if (formatted.replace(/\s/g, '').length <= 16) {
+      setCardData({ ...cardData, number: formatted });
+    }
+  };
+
+  const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatExpiry(e.target.value);
+    if (formatted.replace(/[^0-9]/g, '').length <= 4) {
+      setCardData({ ...cardData, expiry: formatted });
+    }
+  };
+
+  const handleCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[^0-9]/g, '');
+    if (value.length <= 3) {
+      setCardData({ ...cardData, cvv: value });
+    }
+  };
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -27,6 +78,11 @@ const Payment: React.FC<PaymentProps> = ({ event, seats, timer, onSuccess }) => 
     }, 2000);
   };
 
+  const isCardComplete = cardData.number.replace(/\s/g, '').length === 16 && 
+                        cardData.expiry.replace(/[^0-9]/g, '').length === 4 && 
+                        cardData.cvv.length === 3;
+
+  const isFormValid = method !== 'CARD' || isCardComplete;
   const total = seats.length * 7500; // Simplified for prototype
 
   return (
@@ -76,15 +132,36 @@ const Payment: React.FC<PaymentProps> = ({ event, seats, timer, onSuccess }) => 
                <div className="grid grid-cols-2 gap-4">
                  <div className="col-span-2">
                    <label className="text-[10px] font-bold text-neutral-500 uppercase mb-2 block">Card Number</label>
-                   <input className="w-full bg-black border border-white/10 rounded-xl px-4 py-3" placeholder="•••• •••• •••• ••••" />
+                   <input 
+                     type="text"
+                     inputMode="numeric"
+                     className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 focus:border-rose-500 outline-none transition-colors" 
+                     placeholder="•••• •••• •••• ••••" 
+                     value={cardData.number}
+                     onChange={handleCardNumberChange}
+                   />
                  </div>
                  <div>
                    <label className="text-[10px] font-bold text-neutral-500 uppercase mb-2 block">Expiry Date</label>
-                   <input className="w-full bg-black border border-white/10 rounded-xl px-4 py-3" placeholder="MM / YY" />
+                   <input 
+                     type="text"
+                     inputMode="numeric"
+                     className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 focus:border-rose-500 outline-none transition-colors" 
+                     placeholder="MM / YY" 
+                     value={cardData.expiry}
+                     onChange={handleExpiryChange}
+                   />
                  </div>
                  <div>
                    <label className="text-[10px] font-bold text-neutral-500 uppercase mb-2 block">CVV</label>
-                   <input className="w-full bg-black border border-white/10 rounded-xl px-4 py-3" placeholder="•••" />
+                   <input 
+                     type="text"
+                     inputMode="numeric"
+                     className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 focus:border-rose-500 outline-none transition-colors" 
+                     placeholder="•••" 
+                     value={cardData.cvv}
+                     onChange={handleCvvChange}
+                   />
                  </div>
                </div>
             </div>
@@ -137,8 +214,8 @@ const Payment: React.FC<PaymentProps> = ({ event, seats, timer, onSuccess }) => 
 
           <button 
             onClick={handlePay}
-            disabled={isProcessing}
-            className="w-full bg-rose-600 hover:bg-rose-500 text-white font-black py-4 rounded-2xl shadow-lg shadow-rose-900/40 transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
+            disabled={isProcessing || !isFormValid}
+            className="w-full bg-rose-600 hover:bg-rose-500 text-white font-black py-4 rounded-2xl shadow-lg shadow-rose-900/40 transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isProcessing ? (
                <><i className="fas fa-spinner fa-spin"></i> Processing...</>

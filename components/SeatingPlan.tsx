@@ -1,11 +1,13 @@
 
-import React, { useState, useEffect } from 'react';
-import { Event, Seat, Booking, PerformanceRound } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { Event, Seat, Booking, PerformanceRound, User } from '../types';
+import { io, Socket } from 'socket.io-client';
 
 interface SeatingPlanProps {
   event: Event;
   selectedRound: PerformanceRound;
   bookings: Booking[];
+  user: User;
   onConfirm: (seats: string[]) => void;
 }
 
@@ -19,10 +21,57 @@ const ZONE_CONFIG = [
 const ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 const COLS = Array.from({ length: 16 }, (_, i) => i + 1);
 
-const SeatingPlan: React.FC<SeatingPlanProps> = ({ event, selectedRound, bookings, onConfirm }) => {
+const SeatingPlan: React.FC<SeatingPlanProps> = ({ event, selectedRound, bookings, user, onConfirm }) => {
   const [seats, setSeats] = useState<Seat[]>();
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [hoveredSeat, setHoveredSeat] = useState<Seat | null>(null);
+  const [lockedByOthers, setLockedByOthers] = useState<Record<string, string>>({}); // seatId -> userId
+  const socketRef = useRef<Socket | null>(null);
+
+  const roomId = `${event.id}-${selectedRound.id}`;
+
+  useEffect(() => {
+    // Connect to WebSocket server
+    socketRef.current = io();
+
+    socketRef.current.on('connect', () => {
+      console.log('Connected to WebSocket server');
+      socketRef.current?.emit('join-room', roomId);
+    });
+
+    socketRef.current.on('initial-locks', (locks: Record<string, { userId: string }>) => {
+      const othersLocks: Record<string, string> = {};
+      for (const seatId in locks) {
+        if (locks[seatId].userId !== user.id) {
+          othersLocks[seatId] = locks[seatId].userId;
+        }
+      }
+      setLockedByOthers(othersLocks);
+    });
+
+    socketRef.current.on('seat-locked', ({ seatId, userId }: { seatId: string, userId: string }) => {
+      if (userId !== user.id) {
+        setLockedByOthers(prev => ({ ...prev, [seatId]: userId }));
+      }
+    });
+
+    socketRef.current.on('seat-unlocked', ({ seatId }: { seatId: string }) => {
+      setLockedByOthers(prev => {
+        const next = { ...prev };
+        delete next[seatId];
+        return next;
+      });
+    });
+
+    socketRef.current.on('lock-failed', ({ seatId, message }: { seatId: string, message: string }) => {
+      alert(message);
+      setSelectedSeats(prev => prev.filter(s => s !== seatId));
+    });
+
+    return () => {
+      socketRef.current?.disconnect();
+    };
+  }, [roomId, user.id]);
 
   useEffect(() => {
     const initialSeats: Seat[] = [];
@@ -41,51 +90,39 @@ const SeatingPlan: React.FC<SeatingPlanProps> = ({ event, selectedRound, booking
         const seatId = `${row}${col}`;
         
         // If seat is in our permanent bookings list, it's 'sold'
-        // Otherwise, keep a small random chance for mock data simulation
         const isPermanentlySold = bookedSeatIds.has(seatId);
-        const isMockSold = !isPermanentlySold && Math.random() > 0.85;
 
         initialSeats.push({
           id: seatId,
           row,
           col,
           price: zone.price,
-          status: (isPermanentlySold || isMockSold) ? 'sold' : 'available',
+          status: isPermanentlySold ? 'sold' : 'available',
           zone: zone.name,
           color: zone.color
         });
       });
     });
     setSeats(initialSeats);
-
-    // Simulate real-time status updates for OTHER users
-    const interval = setInterval(() => {
-      setSeats(prev => prev?.map(seat => {
-        if (seat.status === 'available' && Math.random() > 0.98) {
-          return { ...seat, status: 'reserved' };
-        }
-        if (seat.status === 'reserved' && Math.random() > 0.95) {
-          return { ...seat, status: 'available' };
-        }
-        return seat;
-      }));
-    }, 3000);
-
-    return () => clearInterval(interval);
   }, [event.id, selectedRound.id, bookings]);
 
   const toggleSeat = (id: string) => {
     const seat = seats?.find(s => s.id === id);
-    if (!seat || seat.status === 'sold' || seat.status === 'reserved') return;
+    if (!seat || seat.status === 'sold') return;
+    
+    // If locked by someone else, can't toggle
+    if (lockedByOthers[id]) return;
 
     if (selectedSeats.includes(id)) {
       setSelectedSeats(prev => prev.filter(s => s !== id));
+      socketRef.current?.emit('unlock-seat', { roomId, seatId: id, userId: user.id });
     } else {
       if (selectedSeats.length >= 3) {
         alert("Maximum 3 seats per transaction");
         return;
       }
       setSelectedSeats(prev => [...prev, id]);
+      socketRef.current?.emit('lock-seat', { roomId, seatId: id, userId: user.id });
     }
   };
 
@@ -171,7 +208,7 @@ const SeatingPlan: React.FC<SeatingPlanProps> = ({ event, selectedRound, booking
 
                     const isSelected = selectedSeats.includes(id);
                     const isSold = seat.status === 'sold';
-                    const isReserved = seat.status === 'reserved';
+                    const isReserved = !!lockedByOthers[id];
                     const zone = ZONE_CONFIG.find(z => z.rows.includes(row))!;
 
                     const isGap = idx === 3 || idx === 11;
@@ -214,7 +251,7 @@ const SeatingPlan: React.FC<SeatingPlanProps> = ({ event, selectedRound, booking
           {/* Detailed Floating Information */}
           {hoveredSeat && (
             <div className="fixed bottom-32 left-1/2 -translate-x-1/2 bg-neutral-900 border border-white/20 px-6 py-3 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[60] animate-fadeIn pointer-events-none flex items-center gap-4">
-              <div className={`w-4 h-4 rounded-full ${hoveredSeat.status === 'sold' ? 'bg-neutral-800' : hoveredSeat.status === 'reserved' ? 'bg-amber-500' : hoveredSeat.color}`}></div>
+              <div className={`w-4 h-4 rounded-full ${hoveredSeat.status === 'sold' ? 'bg-neutral-800' : lockedByOthers[hoveredSeat.id] ? 'bg-amber-500' : hoveredSeat.color}`}></div>
               <div className="flex flex-col">
                  <div className="flex items-center gap-2">
                     <span className="text-rose-500 font-black text-lg">Seat {hoveredSeat.id}</span>
@@ -222,9 +259,9 @@ const SeatingPlan: React.FC<SeatingPlanProps> = ({ event, selectedRound, booking
                  </div>
                  <div className="flex items-center gap-2">
                     <span className="text-white font-black text-sm">
-                      {hoveredSeat.status === 'sold' ? 'UNAVAILABLE' : hoveredSeat.status === 'reserved' ? 'CURRENTLY RESERVED' : `${hoveredSeat.price.toLocaleString()} THB`}
+                      {hoveredSeat.status === 'sold' ? 'UNAVAILABLE' : lockedByOthers[hoveredSeat.id] ? 'CURRENTLY RESERVED' : `${hoveredSeat.price.toLocaleString()} THB`}
                     </span>
-                    {hoveredSeat.status === 'available' && <span className="text-emerald-500 text-[10px] font-bold">AVAILABLE</span>}
+                    {hoveredSeat.status === 'available' && !lockedByOthers[hoveredSeat.id] && <span className="text-emerald-500 text-[10px] font-bold">AVAILABLE</span>}
                  </div>
               </div>
             </div>

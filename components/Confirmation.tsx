@@ -5,11 +5,12 @@ import { Event } from '../types';
 interface ConfirmationProps {
   event: Event;
   seats: string[];
+  orderId: string;
   onViewBookings: () => void;
   onBookAnother: () => void;
 }
 
-const Confirmation: React.FC<ConfirmationProps> = ({ event, seats, onViewBookings, onBookAnother }) => {
+const Confirmation: React.FC<ConfirmationProps> = ({ event, seats, orderId, onViewBookings, onBookAnother }) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [showToast, setShowToast] = useState(false);
 
@@ -48,7 +49,7 @@ const Confirmation: React.FC<ConfirmationProps> = ({ event, seats, onViewBooking
              <div className="flex justify-between items-start mb-6">
                 <div className="text-left">
                   <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Order ID</p>
-                  <p className="font-bold">NV-{Math.floor(Math.random() * 90000000 + 10000000)}</p>
+                  <p className="font-bold">{orderId}</p>
                 </div>
                 <div className="text-right">
                    <div className="w-12 h-12 bg-rose-600 rounded flex items-center justify-center font-black italic text-white">N</div>

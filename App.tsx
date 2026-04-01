@@ -76,9 +76,9 @@ const App: React.FC = () => {
     }
   };
 
-  const handleQueueFinished = () => {
+  const handleQueueFinished = React.useCallback(() => {
     setCurrentStep('SEATING');
-  };
+  }, []);
 
   const handleSeatsConfirmed = (seats: string[]) => {
     setSelectedSeats(seats);
@@ -87,13 +87,19 @@ const App: React.FC = () => {
   };
 
   const handlePaymentSuccess = () => {
+    const now = new Date();
+    const dateStr = now.getFullYear().toString() + 
+                    (now.getMonth() + 1).toString().padStart(2, '0') + 
+                    now.getDate().toString().padStart(2, '0');
+    const sequence = (bookings.length + 1).toString().padStart(4, '0');
+    
     const newBooking: Booking = {
-      orderId: `NV-${Math.floor(Math.random() * 90000000 + 10000000)}`,
+      orderId: `NV-${dateStr}-${sequence}`,
       event: selectedEvent!,
       roundId: selectedRound!.id, // Store roundId for persistent seat blocking
       seats: selectedSeats,
       totalPrice: selectedSeats.length * 7500 + 200,
-      bookingDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+      bookingDate: now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
     };
     setBookings([newBooking, ...bookings]);
     setCurrentStep('CONFIRMATION');
@@ -163,6 +169,7 @@ const App: React.FC = () => {
             event={selectedEvent} 
             selectedRound={selectedRound}
             bookings={bookings}
+            user={user!}
             onConfirm={handleSeatsConfirmed} 
           />
         )}
@@ -178,6 +185,7 @@ const App: React.FC = () => {
           <Confirmation 
             event={selectedEvent} 
             seats={selectedSeats} 
+            orderId={bookings[0]?.orderId || ''}
             onViewBookings={handleGoToMyBookings}
             onBookAnother={handleReturnHome}
           />

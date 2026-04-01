@@ -15,19 +15,19 @@ const QueueRoom: React.FC<QueueProps> = ({ event, onFinished }) => {
   useEffect(() => {
     const timer = setInterval(() => {
       setPosition((prev) => {
-        // Increased jump speed (random 5-15 users every 800ms)
         const next = prev - Math.floor(Math.random() * 10) - 5;
-        if (next <= 0) {
-          clearInterval(timer);
-          onFinished();
-          return 0;
-        }
-        return next;
+        return next > 0 ? next : 0;
       });
-    }, 800); // Faster interval (was 1500ms)
+    }, 800);
 
     return () => clearInterval(timer);
-  }, [onFinished]);
+  }, []);
+
+  useEffect(() => {
+    if (position === 0) {
+      onFinished();
+    }
+  }, [position, onFinished]);
 
   return (
     <div className="flex flex-col items-center justify-center p-6 text-center mt-12 animate-fadeIn">

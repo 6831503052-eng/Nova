@@ -114,7 +114,7 @@ const Home: React.FC<HomeProps> = ({ onSelectEvent, onBrowseAll, onLatestNews })
           <div 
             key={event.id}
             onClick={() => onSelectEvent(event)}
-            className="group cursor-pointer bg-neutral-900 border border-white/5 rounded-2xl overflow-hidden hover:border-rose-500/50 transition-all hover:shadow-[0_0_30px_rgba(225,29,72,0.15)] flex flex-col"
+            className={`group cursor-pointer bg-neutral-900 border border-white/5 rounded-2xl overflow-hidden hover:border-rose-500/50 transition-all hover:shadow-[0_0_30px_rgba(225,29,72,0.15)] flex flex-col ${event.status === 'SOLD_OUT' ? 'opacity-75 grayscale-[0.5]' : ''}`}
           >
             <div className="relative aspect-[4/5] overflow-hidden">
               <img 

@@ -158,12 +158,14 @@ const EventDetail: React.FC<EventDetailProps> = ({ event, user, onRoundSelect, o
               {event.rounds.map((round) => (
                 <button
                   key={round.id}
-                  onClick={() => setSelectedRoundId(round.id)}
+                  onClick={() => event.status !== 'SOLD_OUT' && setSelectedRoundId(round.id)}
+                  disabled={event.status === 'SOLD_OUT'}
                   className={`
                     p-6 rounded-2xl border-2 text-left transition-all relative overflow-hidden group
                     ${selectedRoundId === round.id 
                       ? 'bg-rose-600/10 border-rose-600 shadow-[0_10px_30px_rgba(225,29,72,0.15)]' 
                       : 'bg-black border-white/10 hover:border-white/30'}
+                    ${event.status === 'SOLD_OUT' ? 'opacity-50 cursor-not-allowed grayscale' : ''}
                   `}
                 >
                   <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-1">Performance</p>
@@ -186,19 +188,19 @@ const EventDetail: React.FC<EventDetailProps> = ({ event, user, onRoundSelect, o
 
           <div className="pt-8">
             <button
-              disabled={!selectedRoundId}
+              disabled={!selectedRoundId || event.status === 'SOLD_OUT'}
               onClick={() => {
                 const round = event.rounds.find(r => r.id === selectedRoundId);
                 if (round) onRoundSelect(round);
               }}
               className={`
                 w-full py-5 rounded-2xl font-black text-xl uppercase tracking-[0.1em] transition-all
-                ${selectedRoundId 
+                ${selectedRoundId && event.status !== 'SOLD_OUT'
                   ? 'bg-rose-600 hover:bg-rose-500 shadow-xl shadow-rose-900/40 active:scale-[0.98]' 
                   : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'}
               `}
             >
-              {selectedRoundId ? 'Get Tickets Now' : 'Select a Date First'}
+              {event.status === 'SOLD_OUT' ? 'Sold Out' : selectedRoundId ? 'Get Tickets Now' : 'Select a Date First'}
             </button>
             <div className="flex flex-col items-center gap-4 mt-6">
                <p className="text-xs text-neutral-500 flex items-center gap-2">
