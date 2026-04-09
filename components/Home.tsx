@@ -58,6 +58,19 @@ const MOCK_EVENTS: Event[] = [
     description: 'Coldplay is bringing the most sustainable concert tour ever.',
     rounds: [{ id: '4a', date: 'Thursday, 15 Jan 2026', time: '19:30' }],
     status: 'OPEN'
+  },
+  {
+    id: '7',
+    title: 'CHA EUN-WOO 2026 [Mystery Elevator]',
+    venue: 'Union Hall, Union Mall',
+    date: 'FEB 14, 2026',
+    image: 'https://m.thaiticketmajor.com/img_poster/prefix_1/2817/5817/cha-eun-woo-2024-just-one-10-minute-mystery-elevator-65d8626249342-l.png',
+    priceRange: '2,500 - 6,500 THB',
+    minPrice: 2500,
+    stadiumLayoutType: 'ARENA',
+    description: 'Spend your Valentine\'s Day with the one and only Cha Eun-woo in his highly anticipated solo fan meeting tour.',
+    rounds: [{ id: '7a', date: 'Saturday, 14 Feb 2026', time: '18:00' }],
+    status: 'COMING_SOON'
   }
 ];
 

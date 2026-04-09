@@ -12,6 +12,14 @@ import Confirmation from './components/Confirmation';
 import MyBookings from './components/MyBookings';
 import BrowseAll from './components/BrowseAll';
 import LatestNews from './components/LatestNews';
+import { io } from 'socket.io-client';
+
+interface Notification {
+  type: 'UPCOMING_SALE' | 'SALE_OPEN';
+  title: string;
+  message: string;
+  eventId: string;
+}
 
 const App: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<AppStep>('HOME');
@@ -21,6 +29,27 @@ const App: React.FC = () => {
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [bookingTimer, setBookingTimer] = useState<number>(0);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [notification, setNotification] = useState<Notification | null>(null);
+  const [validatedTotal, setValidatedTotal] = useState<number | null>(null);
+  const [validationToken, setValidationToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const socket = io();
+    
+    socket.on('notification', (data: Notification) => {
+      // Only show notification if user is logged in
+      if (user) {
+        console.log('Received notification:', data);
+        setNotification(data);
+        // Auto-hide after 10 seconds
+        setTimeout(() => setNotification(null), 10000);
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [user]); // Re-bind when user state changes
 
   const goBack = () => {
     switch (currentStep) {
@@ -38,6 +67,7 @@ const App: React.FC = () => {
 
   const handleLogout = () => {
     setUser(null);
+    setBookings([]); // Clear bookings on logout
     if (['QUEUE', 'SEATING', 'PAYMENT', 'MY_BOOKINGS'].includes(currentStep)) {
       setCurrentStep('LOGIN');
     }
@@ -67,8 +97,18 @@ const App: React.FC = () => {
     }
   };
 
-  const handleLoginSuccess = (userData: User) => {
+  const handleLoginSuccess = async (userData: User) => {
     setUser(userData);
+    
+    // Fetch persistent bookings from server
+    try {
+      const response = await fetch(`/api/bookings/${userData.email}`);
+      const data = await response.json();
+      setBookings(data);
+    } catch (error) {
+      console.error('Failed to fetch bookings:', error);
+    }
+
     if (selectedEvent && selectedRound) {
       setCurrentStep('QUEUE');
     } else {
@@ -80,13 +120,35 @@ const App: React.FC = () => {
     setCurrentStep('SEATING');
   }, []);
 
-  const handleSeatsConfirmed = (seats: string[]) => {
+  const handleSeatsConfirmed = async (seats: string[]) => {
+    if (!selectedEvent) return;
+    
     setSelectedSeats(seats);
-    setBookingTimer(600);
-    setCurrentStep('PAYMENT');
+    
+    try {
+      // Secure Price Validation (Backend as Single Source of Truth)
+      const response = await fetch('/api/checkout/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId: selectedEvent.id, seats })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setValidatedTotal(data.total);
+        setValidationToken(data.token);
+        setBookingTimer(600);
+        setCurrentStep('PAYMENT');
+      } else {
+        alert('Price validation failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Validation error:', error);
+      alert('Network error during price validation.');
+    }
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async () => {
     const now = new Date();
     const dateStr = now.getFullYear().toString() + 
                     (now.getMonth() + 1).toString().padStart(2, '0') + 
@@ -98,9 +160,21 @@ const App: React.FC = () => {
       event: selectedEvent!,
       roundId: selectedRound!.id, // Store roundId for persistent seat blocking
       seats: selectedSeats,
-      totalPrice: selectedSeats.length * 7500 + 200,
+      totalPrice: validatedTotal || (selectedSeats.length * 7500 + 200),
       bookingDate: now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
     };
+
+    // Save booking to server for persistence
+    try {
+      await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user?.email, booking: newBooking })
+      });
+    } catch (error) {
+      console.error('Failed to save booking:', error);
+    }
+
     setBookings([newBooking, ...bookings]);
     setCurrentStep('CONFIRMATION');
   };
@@ -178,6 +252,7 @@ const App: React.FC = () => {
             event={selectedEvent} 
             seats={selectedSeats} 
             timer={bookingTimer}
+            total={validatedTotal || 0}
             onSuccess={handlePaymentSuccess}
           />
         )}
@@ -198,6 +273,33 @@ const App: React.FC = () => {
           />
         )}
       </main>
+
+      {/* Real-time Notification System UI */}
+      {notification && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] w-full max-w-md px-4 animate-slideDown">
+          <div className={`p-6 rounded-3xl border shadow-2xl backdrop-blur-xl flex items-start gap-4 ${
+            notification.type === 'SALE_OPEN' 
+              ? 'bg-rose-600/90 border-rose-400 text-white' 
+              : 'bg-neutral-900/90 border-white/20 text-white'
+          }`}>
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+              notification.type === 'SALE_OPEN' ? 'bg-white/20' : 'bg-rose-600/20'
+            }`}>
+              <i className={`fas ${notification.type === 'SALE_OPEN' ? 'fa-bolt' : 'fa-clock'} text-xl`}></i>
+            </div>
+            <div className="flex-1">
+              <h4 className="font-black text-lg leading-tight mb-1">{notification.title}</h4>
+              <p className="text-sm opacity-90 leading-relaxed">{notification.message}</p>
+              <button 
+                onClick={() => setNotification(null)}
+                className="mt-3 text-xs font-black uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <button className="fixed bottom-6 right-6 w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center shadow-lg hover:bg-purple-500 transition-colors z-50">
         <i className="fas fa-question text-white"></i>

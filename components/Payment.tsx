@@ -6,10 +6,11 @@ interface PaymentProps {
   event: Event;
   seats: string[];
   timer: number;
+  total: number;
   onSuccess: () => void;
 }
 
-const Payment: React.FC<PaymentProps> = ({ event, seats, timer, onSuccess }) => {
+const Payment: React.FC<PaymentProps> = ({ event, seats, timer, total, onSuccess }) => {
   const [method, setMethod] = useState<'CARD' | 'QR' | 'WALLET'>('CARD');
   const [isProcessing, setIsProcessing] = useState(false);
   const [cardData, setCardData] = useState({
@@ -83,7 +84,6 @@ const Payment: React.FC<PaymentProps> = ({ event, seats, timer, onSuccess }) => 
                         cardData.cvv.length === 3;
 
   const isFormValid = method !== 'CARD' || isCardComplete;
-  const total = seats.length * 7500; // Simplified for prototype
 
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 pb-24">
@@ -208,7 +208,7 @@ const Payment: React.FC<PaymentProps> = ({ event, seats, timer, onSuccess }) => 
           <div className="border-t border-white/10 pt-4 mb-8">
             <div className="flex justify-between items-center">
               <span className="text-lg font-bold">Grand Total</span>
-              <span className="text-2xl font-black text-rose-500">{(total + 200).toLocaleString()} THB</span>
+              <span className="text-2xl font-black text-rose-500">{total.toLocaleString()} THB</span>
             </div>
           </div>
 
