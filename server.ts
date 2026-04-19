@@ -11,39 +11,28 @@ import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.JWT_SECRET || 'nova-ticket-secret-key-2026';
 
 // Mock Database for Events and Prices (Single Source of Truth)
+const DEFAULT_ZONES = { 'VVIP (Row A-B)': 15000, 'VIP (Row C-E)': 9500, 'Gold (Row F-G)': 6500, 'Silver (Row H-J)': 4500, 'Bronze (Row K-M)': 2500 };
+
 const EVENT_DATA: Record<string, { 
   id: string, 
   title: string, 
   basePrice: number, 
-  openingTime: number, // Timestamp
+  openingTime: number,
   notified5Min: boolean,
   notified1Min: boolean,
   notified30Sec: boolean,
   notifiedNow: boolean,
-  zones: Record<string, number> // Zone name -> Price
+  zones: Record<string, number>
 }> = {
-  '1': { 
-    id: '1', 
-    title: 'Taylor Swift | The Eras Tour', 
-    basePrice: 2500, 
-    openingTime: Date.now() - 100000, // Already open
-    notified5Min: true,
-    notified1Min: true,
-    notified30Sec: true,
-    notifiedNow: true,
-    zones: { 'VVIP (Row A-B)': 15000, 'VIP (Row C-E)': 9500, 'Standing A': 6500, 'Standard (Row H-J)': 3500 }
-  },
-  '7': { 
-    id: '7', 
-    title: 'CHA EUN-WOO 2026 [Mystery Elevator]', 
-    basePrice: 2500, 
-    openingTime: Date.now() + 10 * 60 * 1000, // Opens in 10 minutes for demo
-    notified5Min: false,
-    notified1Min: false,
-    notified30Sec: false,
-    notifiedNow: false,
-    zones: { 'VVIP (Row A-B)': 15000, 'VIP (Row C-E)': 9500, 'Standing A': 6500, 'Standard (Row H-J)': 3500 }
-  }
+  '1': { id: '1', title: 'Taylor Swift', basePrice: 2500, openingTime: 0, notified5Min: true, notified1Min: true, notified30Sec: true, notifiedNow: true, zones: DEFAULT_ZONES },
+  '2': { id: '2', title: 'Bruno Mars', basePrice: 1500, openingTime: 0, notified5Min: true, notified1Min: true, notified30Sec: true, notifiedNow: true, zones: DEFAULT_ZONES },
+  '3': { id: '3', title: 'The Weeknd', basePrice: 3000, openingTime: 0, notified5Min: true, notified1Min: true, notified30Sec: true, notifiedNow: true, zones: DEFAULT_ZONES },
+  '4': { id: '4', title: 'Coldplay', basePrice: 2000, openingTime: 0, notified5Min: true, notified1Min: true, notified30Sec: true, notifiedNow: true, zones: DEFAULT_ZONES },
+  '5': { id: '5', title: 'Wonderfruit', basePrice: 5000, openingTime: 0, notified5Min: true, notified1Min: true, notified30Sec: true, notifiedNow: true, zones: DEFAULT_ZONES },
+  '6': { id: '6', title: 'Lee Youngji', basePrice: 2500, openingTime: 0, notified5Min: true, notified1Min: true, notified30Sec: true, notifiedNow: true, zones: DEFAULT_ZONES },
+  '7': { id: '7', title: 'Cha Eun-Woo', basePrice: 2500, openingTime: 0, notified5Min: true, notified1Min: true, notified30Sec: true, notifiedNow: true, zones: DEFAULT_ZONES },
+  'cs1': { id: 'cs1', title: 'Dua Lipa', basePrice: 2500, openingTime: 0, notified5Min: true, notified1Min: true, notified30Sec: true, notifiedNow: true, zones: DEFAULT_ZONES },
+  'cs2': { id: 'cs2', title: 'Ultra Bangkok', basePrice: 3500, openingTime: 0, notified5Min: true, notified1Min: true, notified30Sec: true, notifiedNow: true, zones: DEFAULT_ZONES }
 };
 
 // Persistent store for bookings (Server-side)
@@ -110,8 +99,9 @@ async function startServer() {
       let zonePrice = event.basePrice;
       if (['A', 'B'].includes(row)) zonePrice = event.zones['VVIP (Row A-B)'];
       else if (['C', 'D', 'E'].includes(row)) zonePrice = event.zones['VIP (Row C-E)'];
-      else if (['F', 'G'].includes(row)) zonePrice = event.zones['Standing A'];
-      else if (['H', 'I', 'J'].includes(row)) zonePrice = event.zones['Standard (Row H-J)'];
+      else if (['F', 'G'].includes(row)) zonePrice = event.zones['Gold (Row F-G)'];
+      else if (['H', 'I', 'J'].includes(row)) zonePrice = event.zones['Silver (Row H-J)'];
+      else if (['K', 'L', 'M'].includes(row)) zonePrice = event.zones['Bronze (Row K-M)'];
       
       total += zonePrice;
       return { id: seatId, price: zonePrice };

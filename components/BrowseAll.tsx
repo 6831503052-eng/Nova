@@ -13,7 +13,7 @@ const ALL_MOCK_EVENTS: Event[] = [
     priceRange: '2,500 - 15,000 THB',
     minPrice: 2500,
     stadiumLayoutType: 'STADIUM',
-    description: 'The Eras Tour...',
+    description: 'The Eras Tour is the ongoing sixth headlining concert tour by American singer-songwriter Taylor Swift.',
     rounds: [
       { id: '1a', date: 'Sunday, 12 Oct 2025', time: '19:00' },
       { id: '1b', date: 'Monday, 13 Oct 2025', time: '19:00' },
@@ -31,10 +31,10 @@ const ALL_MOCK_EVENTS: Event[] = [
     priceRange: '1,500 - 9,500 THB',
     minPrice: 1500,
     stadiumLayoutType: 'ARENA',
-    description: 'Global superstar...',
+    description: 'Global superstar Bruno Mars is returning to Bangkok.',
     rounds: [{ id: '2a', date: 'Wednesday, 05 Nov 2025', time: '20:00' }],
     category: 'CONCERT',
-    status: 'SOLD_OUT'
+    status: 'OPEN'
   },
   {
     id: '3',
@@ -45,7 +45,7 @@ const ALL_MOCK_EVENTS: Event[] = [
     priceRange: '3,000 - 20,000 THB',
     minPrice: 3000,
     stadiumLayoutType: 'STADIUM',
-    description: 'The Weeknd...',
+    description: 'The Weeknd brings his cinematic stadium tour to Bangkok.',
     rounds: [{ id: '3a', date: 'Saturday, 20 Dec 2025', time: '21:00' }],
     category: 'CONCERT',
     status: 'OPEN'
@@ -59,7 +59,7 @@ const ALL_MOCK_EVENTS: Event[] = [
     priceRange: '2,000 - 18,000 THB',
     minPrice: 2000,
     stadiumLayoutType: 'STADIUM',
-    description: 'Coldplay...',
+    description: 'Coldplay is bringing the most sustainable concert tour ever.',
     rounds: [{ id: '4a', date: 'Thursday, 15 Jan 2026', time: '19:30' }],
     category: 'CONCERT',
     status: 'OPEN'
@@ -96,7 +96,7 @@ const ALL_MOCK_EVENTS: Event[] = [
     description: 'Join the rap icon for an intimate night.',
     rounds: [{ id: '6a', date: 'Saturday, 25 Oct 2024', time: '18:00' }],
     category: 'CONCERT',
-    status: 'SOLD_OUT'
+    status: 'OPEN'
   },
   {
     id: '7',
@@ -110,8 +110,8 @@ const ALL_MOCK_EVENTS: Event[] = [
     description: 'Spend your Valentine\'s Day with the one and only Cha Eun-woo in his highly anticipated solo fan meeting tour.',
     rounds: [{ id: '7a', date: 'Saturday, 14 Feb 2026', time: '18:00' }],
     category: 'FAN_MEETING',
-    status: 'COMING_SOON',
-    saleStartTime: '2026-05-20T10:00:00Z'
+    status: 'OPEN',
+    saleStartTime: ''
   }
 ];
 

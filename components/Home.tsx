@@ -32,7 +32,7 @@ const MOCK_EVENTS: Event[] = [
     stadiumLayoutType: 'ARENA',
     description: 'Global superstar Bruno Mars is returning to Bangkok.',
     rounds: [{ id: '2a', date: 'Wednesday, 05 Nov 2025', time: '20:00' }],
-    status: 'SOLD_OUT'
+    status: 'OPEN'
   },
   {
     id: '3',
@@ -71,8 +71,8 @@ const MOCK_EVENTS: Event[] = [
     stadiumLayoutType: 'ARENA',
     description: 'Spend your Valentine\'s Day with the one and only Cha Eun-woo in his highly anticipated solo fan meeting tour.',
     rounds: [{ id: '7a', date: 'Saturday, 14 Feb 2026', time: '18:00' }],
-    status: 'COMING_SOON',
-    saleStartTime: '2026-05-20T10:00:00Z'
+    status: 'OPEN',
+    saleStartTime: ''
   }
 ];
 

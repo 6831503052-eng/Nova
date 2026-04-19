@@ -41,13 +41,13 @@ const COMING_SOON_EVENTS: Event[] = [
     venue: 'Rajamangala Stadium',
     date: 'MAR 10, 2026',
     image: 'https://themusicuniverse.com/wp-content/uploads/2025/04/dualipa25tour.jpg',
-    priceRange: 'TBA',
-    minPrice: 0,
+    priceRange: '2,500 - 15,000 THB',
+    minPrice: 2500,
     stadiumLayoutType: 'STADIUM',
     description: 'The global pop sensation returns with her newest world tour with high production value.',
     rounds: [{ id: 'cs1a', date: 'Tuesday, 10 Mar 2026', time: '19:00' }],
-    status: 'COMING_SOON',
-    saleStartTime: '2026-06-01T10:00:00Z'
+    status: 'OPEN',
+    saleStartTime: ''
   },
   {
     id: 'cs2',
@@ -55,13 +55,13 @@ const COMING_SOON_EVENTS: Event[] = [
     venue: 'Siam Park City',
     date: 'APR 18 - 19, 2026',
     image: 'https://s.isanook.com/jo/0/ui/493/2469401/ultrathailand2023__cover_002.jpg',
-    priceRange: 'TBA',
-    minPrice: 0,
+    priceRange: '3,000 - 25,000 THB',
+    minPrice: 3000,
     stadiumLayoutType: 'ARENA',
     description: 'The worlds premier electronic music festival returns for a massive two-day event.',
     rounds: [{ id: 'cs2a', date: 'Saturday, 18 Apr 2026', time: '14:00' }],
-    status: 'COMING_SOON',
-    saleStartTime: '2026-06-15T10:00:00Z'
+    status: 'OPEN',
+    saleStartTime: ''
   }
 ];
 
