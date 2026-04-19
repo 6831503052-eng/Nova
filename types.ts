@@ -20,6 +20,7 @@ export interface Event {
   stadiumLayoutType: 'STADIUM' | 'ARENA';
   category?: 'CONCERT' | 'FESTIVAL' | 'FAN_MEETING';
   status?: 'OPEN' | 'COMING_SOON' | 'SOLD_OUT';
+  saleStartTime?: string; // ISO string or specific format
 }
 
 /**
@@ -48,4 +49,14 @@ export interface Booking {
   seats: string[];
   totalPrice: number;
   bookingDate: string;
+}
+
+export interface Notification {
+  id: string;
+  type: 'UPCOMING_SALE' | 'SALE_OPEN';
+  title: string;
+  message: string;
+  eventId: string;
+  timestamp: number;
+  read?: boolean;
 }

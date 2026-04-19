@@ -1,14 +1,16 @@
 
 import React, { useState } from 'react';
 import { Booking } from '../types';
+import { translations } from '../src/translations';
 
 interface MyBookingsProps {
   bookings: Booking[];
   onExplore: () => void;
   onBack: () => void;
+  t: (key: keyof typeof translations['en']) => string;
 }
 
-const MyBookings: React.FC<MyBookingsProps> = ({ bookings, onExplore, onBack }) => {
+const MyBookings: React.FC<MyBookingsProps> = ({ bookings, onExplore, onBack, t }) => {
   const [selectedQR, setSelectedQR] = useState<Booking | null>(null);
 
   return (
@@ -62,7 +64,7 @@ const MyBookings: React.FC<MyBookingsProps> = ({ bookings, onExplore, onBack }) 
             <i className="fas fa-arrow-left"></i>
           </button>
           <div>
-            <h1 className="text-4xl font-black">My Bookings</h1>
+            <h1 className="text-4xl font-black">{t('myBookings')}</h1>
             <p className="text-neutral-500">History of your secured tickets.</p>
           </div>
         </div>
@@ -85,7 +87,7 @@ const MyBookings: React.FC<MyBookingsProps> = ({ bookings, onExplore, onBack }) 
             onClick={onExplore}
             className="bg-rose-600 hover:bg-rose-500 text-white font-bold px-8 py-3 rounded-xl transition-all shadow-lg shadow-rose-900/20"
           >
-            Explore Events
+            {t('browseAll')}
           </button>
         </div>
       ) : (

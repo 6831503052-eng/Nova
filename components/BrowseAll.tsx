@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Event } from '../types';
+import { translations } from '../src/translations';
 
 const ALL_MOCK_EVENTS: Event[] = [
   {
@@ -109,17 +110,19 @@ const ALL_MOCK_EVENTS: Event[] = [
     description: 'Spend your Valentine\'s Day with the one and only Cha Eun-woo in his highly anticipated solo fan meeting tour.',
     rounds: [{ id: '7a', date: 'Saturday, 14 Feb 2026', time: '18:00' }],
     category: 'FAN_MEETING',
-    status: 'COMING_SOON'
+    status: 'COMING_SOON',
+    saleStartTime: '2026-05-20T10:00:00Z'
   }
 ];
 
 interface BrowseAllProps {
   onSelectEvent: (event: Event) => void;
+  t: (key: keyof typeof translations['en']) => string;
 }
 
 type QuickFilter = 'ALL' | 'WEEKEND' | 'UNDER_3000' | 'AVAILABLE';
 
-const BrowseAll: React.FC<BrowseAllProps> = ({ onSelectEvent }) => {
+const BrowseAll: React.FC<BrowseAllProps> = ({ onSelectEvent, t }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [quickFilter, setQuickFilter] = useState<QuickFilter>('ALL');
@@ -144,10 +147,10 @@ const BrowseAll: React.FC<BrowseAllProps> = ({ onSelectEvent }) => {
   }, [searchTerm, categoryFilter, quickFilter]);
 
   return (
-    <div className="p-6 md:p-12 max-w-7xl mx-auto animate-fadeIn">
-      <div className="mb-12">
-        <h1 className="text-4xl font-black mb-4">Explore Events</h1>
-        <p className="text-neutral-500 mb-8">Discover and book your favorite concerts, festivals and more.</p>
+    <div className="p-4 md:p-12 max-w-7xl mx-auto animate-fadeIn">
+      <div className="mb-8 md:mb-12">
+        <h1 className="text-3xl md:text-4xl font-black mb-2 md:mb-4">{t('browseAll')}</h1>
+        <p className="text-neutral-500 text-sm md:text-base mb-6 md:mb-8">{t('heroSub')}</p>
         
         <div className="flex flex-col gap-6 mb-8">
           <div className="flex flex-col md:flex-row gap-4">
@@ -161,12 +164,12 @@ const BrowseAll: React.FC<BrowseAllProps> = ({ onSelectEvent }) => {
                 className="w-full bg-neutral-900 border border-white/10 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:border-rose-500 transition-all text-white min-h-[56px]"
               />
             </div>
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 md:pb-0">
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 md:pb-0 snap-x">
               {['ALL', 'CONCERT', 'FESTIVAL', 'FAN_MEETING'].map(cat => (
                 <button
                   key={cat}
                   onClick={() => setCategoryFilter(cat)}
-                  className={`px-6 py-4 rounded-2xl font-bold whitespace-nowrap transition-all border min-h-[56px] ${categoryFilter === cat ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-900/20' : 'bg-neutral-900 border-white/10 text-neutral-400 hover:border-white/30'}`}
+                  className={`px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-2xl font-bold whitespace-nowrap transition-all border min-h-[48px] md:min-h-[56px] text-xs md:text-sm snap-start ${categoryFilter === cat ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-900/20' : 'bg-neutral-900 border-white/10 text-neutral-400 hover:border-white/30'}`}
                 >
                   {cat.replace('_', ' ')}
                 </button>
@@ -178,10 +181,9 @@ const BrowseAll: React.FC<BrowseAllProps> = ({ onSelectEvent }) => {
           <div className="flex flex-wrap gap-3 items-center">
             <span className="text-xs font-bold text-neutral-500 uppercase tracking-widest mr-2">Quick Filters:</span>
             {[
-              { id: 'ALL', label: 'All Events' },
-              { id: 'WEEKEND', label: 'This Weekend' },
-              { id: 'UNDER_3000', label: 'Under 3,000 THB' },
-              { id: 'AVAILABLE', label: 'Available Now' }
+              { id: 'ALL', label: t('viewAll') },
+              { id: 'WEEKEND', label: t('trendingEvents') },
+              { id: 'AVAILABLE', label: t('officialTickets') }
             ].map(filter => (
               <button
                 key={filter.id}
@@ -210,7 +212,7 @@ const BrowseAll: React.FC<BrowseAllProps> = ({ onSelectEvent }) => {
            </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           {filteredEvents.map(event => (
             <div 
               key={event.id}

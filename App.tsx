@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { AppStep, Event, User, PerformanceRound, Booking } from './types';
+import { AppStep, Event, User, PerformanceRound, Booking, Notification } from './types';
+import { Language, translations } from './src/translations';
 import Header from './components/Header';
 import Home from './components/Home';
 import EventDetail from './components/EventDetail';
@@ -14,15 +15,9 @@ import BrowseAll from './components/BrowseAll';
 import LatestNews from './components/LatestNews';
 import { io } from 'socket.io-client';
 
-interface Notification {
-  type: 'UPCOMING_SALE' | 'SALE_OPEN';
-  title: string;
-  message: string;
-  eventId: string;
-}
-
 const App: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<AppStep>('HOME');
+  const [stepHistory, setStepHistory] = useState<AppStep[]>(['HOME']);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [selectedRound, setSelectedRound] = useState<PerformanceRound | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -30,8 +25,12 @@ const App: React.FC = () => {
   const [bookingTimer, setBookingTimer] = useState<number>(0);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [notification, setNotification] = useState<Notification | null>(null);
+  const [notificationHistory, setNotificationHistory] = useState<Notification[]>([]);
   const [validatedTotal, setValidatedTotal] = useState<number | null>(null);
   const [validationToken, setValidationToken] = useState<string | null>(null);
+  const [lang, setLang] = useState<Language>('en');
+
+  const t = (key: keyof typeof translations['en']) => translations[lang][key] || key;
 
   useEffect(() => {
     const socket = io();
@@ -41,6 +40,7 @@ const App: React.FC = () => {
       if (user) {
         console.log('Received notification:', data);
         setNotification(data);
+        setNotificationHistory(prev => [data, ...prev]);
         // Auto-hide after 10 seconds
         setTimeout(() => setNotification(null), 10000);
       }
@@ -51,18 +51,28 @@ const App: React.FC = () => {
     };
   }, [user]); // Re-bind when user state changes
 
-  const goBack = () => {
-    switch (currentStep) {
-      case 'EVENT_DETAIL': setCurrentStep('BROWSE_ALL'); break;
-      case 'LOGIN': setCurrentStep('EVENT_DETAIL'); break;
-      case 'QUEUE': setCurrentStep('EVENT_DETAIL'); break;
-      case 'SEATING': setCurrentStep('HOME'); break;
-      case 'PAYMENT': setCurrentStep('SEATING'); break;
-      case 'MY_BOOKINGS': handleReturnHome(); break;
-      case 'BROWSE_ALL': setCurrentStep('HOME'); break;
-      case 'LATEST_NEWS': setCurrentStep('HOME'); break;
-      default: setCurrentStep('HOME');
+  const handleNavigate = (step: AppStep) => {
+    if (step === 'HOME') {
+      setStepHistory(['HOME']);
+      handleReturnHome();
+      return;
     }
+    setStepHistory(prev => [...prev, step]);
+    setCurrentStep(step);
+  };
+
+  const goBack = () => {
+    if (stepHistory.length <= 1) {
+      handleReturnHome();
+      return;
+    }
+    
+    const newHistory = [...stepHistory];
+    newHistory.pop(); // Remove current
+    const prevStep = newHistory[newHistory.length - 1];
+    
+    setStepHistory(newHistory);
+    setCurrentStep(prevStep);
   };
 
   const handleLogout = () => {
@@ -85,15 +95,15 @@ const App: React.FC = () => {
 
   const handleSelectEvent = (event: Event) => {
     setSelectedEvent(event);
-    setCurrentStep('EVENT_DETAIL');
+    handleNavigate('EVENT_DETAIL');
   };
 
   const handleRoundSelected = (round: PerformanceRound) => {
     setSelectedRound(round);
     if (!user) {
-      setCurrentStep('LOGIN');
+      handleNavigate('LOGIN');
     } else {
-      setCurrentStep('QUEUE');
+      handleNavigate('QUEUE');
     }
   };
 
@@ -110,14 +120,14 @@ const App: React.FC = () => {
     }
 
     if (selectedEvent && selectedRound) {
-      setCurrentStep('QUEUE');
+      handleNavigate('QUEUE');
     } else {
-      setCurrentStep('HOME');
+      handleNavigate('HOME');
     }
   };
 
   const handleQueueFinished = React.useCallback(() => {
-    setCurrentStep('SEATING');
+    handleNavigate('SEATING');
   }, []);
 
   const handleSeatsConfirmed = async (seats: string[]) => {
@@ -138,7 +148,7 @@ const App: React.FC = () => {
         setValidatedTotal(data.total);
         setValidationToken(data.token);
         setBookingTimer(600);
-        setCurrentStep('PAYMENT');
+        handleNavigate('PAYMENT');
       } else {
         alert('Price validation failed. Please try again.');
       }
@@ -176,32 +186,41 @@ const App: React.FC = () => {
     }
 
     setBookings([newBooking, ...bookings]);
-    setCurrentStep('CONFIRMATION');
+    handleNavigate('CONFIRMATION');
   };
 
   const handleReturnHome = () => {
     setCurrentStep('HOME');
+    setStepHistory(['HOME']); // Reset history when returning home
     setSelectedEvent(null);
     setSelectedRound(null);
     setSelectedSeats([]);
   };
 
   const handleGoToMyBookings = () => {
-    setCurrentStep('MY_BOOKINGS');
+    handleNavigate('MY_BOOKINGS');
     setSelectedEvent(null);
     setSelectedRound(null);
     setSelectedSeats([]);
   };
 
   const handleGoToBrowseAll = () => {
-    setCurrentStep('BROWSE_ALL');
+    handleNavigate('BROWSE_ALL');
     setSelectedEvent(null);
     setSelectedRound(null);
     setSelectedSeats([]);
   };
 
   const handleTriggerLogin = () => {
-    setCurrentStep('LOGIN');
+    handleNavigate('LOGIN');
+  };
+
+  const handleMarkAllRead = () => {
+    setNotificationHistory(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const handleClearHistory = () => {
+    setNotificationHistory([]);
   };
 
   return (
@@ -211,67 +230,81 @@ const App: React.FC = () => {
         currentStep={currentStep} 
         onBack={goBack} 
         onLogout={handleLogout}
-        onLoginClick={() => setCurrentStep('LOGIN')}
+        onLoginClick={() => handleNavigate('LOGIN')}
         onMyBookings={handleGoToMyBookings}
-        onHomeClick={handleReturnHome}
-        onBrowseAll={() => setCurrentStep('BROWSE_ALL')}
-        onLatestNews={() => setCurrentStep('LATEST_NEWS')}
+        onHomeClick={() => handleNavigate('HOME')}
+        onBrowseAll={() => handleNavigate('BROWSE_ALL')}
+        onLatestNews={() => handleNavigate('LATEST_NEWS')}
+        notifications={notificationHistory}
+        onMarkAllRead={handleMarkAllRead}
+        onClearNotifications={handleClearHistory}
+        lang={lang}
+        onLangChange={setLang}
+        t={t}
       />
 
-      <main className="flex-1 overflow-y-auto pt-16">
-        {currentStep === 'HOME' && (
-          <Home 
-            onSelectEvent={handleSelectEvent} 
-            onBrowseAll={() => setCurrentStep('BROWSE_ALL')}
-            onLatestNews={() => setCurrentStep('LATEST_NEWS')}
-          />
-        )}
-        {currentStep === 'BROWSE_ALL' && <BrowseAll onSelectEvent={handleSelectEvent} />}
-        {currentStep === 'LATEST_NEWS' && <LatestNews onSelectEvent={handleSelectEvent} />}
-        {currentStep === 'EVENT_DETAIL' && selectedEvent && (
-          <EventDetail 
-            event={selectedEvent} 
-            user={user}
-            onRoundSelect={handleRoundSelected} 
-            onTriggerLogin={handleTriggerLogin}
-          />
-        )}
-        {currentStep === 'LOGIN' && <Login onLogin={handleLoginSuccess} />}
-        {currentStep === 'QUEUE' && <QueueRoom onFinished={handleQueueFinished} event={selectedEvent!} />}
-        {currentStep === 'SEATING' && selectedEvent && selectedRound && (
-          <SeatingPlan 
-            event={selectedEvent} 
-            selectedRound={selectedRound}
-            bookings={bookings}
-            user={user!}
-            onConfirm={handleSeatsConfirmed} 
-          />
-        )}
-        {currentStep === 'PAYMENT' && selectedEvent && (
-          <Payment 
-            event={selectedEvent} 
-            seats={selectedSeats} 
-            timer={bookingTimer}
-            total={validatedTotal || 0}
-            onSuccess={handlePaymentSuccess}
-          />
-        )}
-        {currentStep === 'CONFIRMATION' && selectedEvent && (
-          <Confirmation 
-            event={selectedEvent} 
-            seats={selectedSeats} 
-            orderId={bookings[0]?.orderId || ''}
-            onViewBookings={handleGoToMyBookings}
-            onBookAnother={handleReturnHome}
-          />
-        )}
-        {currentStep === 'MY_BOOKINGS' && (
-          <MyBookings 
-            bookings={bookings} 
-            onExplore={handleGoToBrowseAll} 
-            onBack={handleReturnHome}
-          />
-        )}
+      <main className="flex-1 overflow-y-auto pt-16 custom-scrollbar">
+        <div className="min-h-full">
+          {currentStep === 'HOME' && (
+            <Home 
+              onSelectEvent={handleSelectEvent} 
+              onBrowseAll={() => handleNavigate('BROWSE_ALL')}
+              onLatestNews={() => handleNavigate('LATEST_NEWS')}
+              t={t}
+            />
+          )}
+          {currentStep === 'BROWSE_ALL' && <BrowseAll onSelectEvent={handleSelectEvent} t={t} />}
+          {currentStep === 'LATEST_NEWS' && <LatestNews onSelectEvent={handleSelectEvent} t={t} />}
+          {currentStep === 'EVENT_DETAIL' && selectedEvent && (
+            <EventDetail 
+              event={selectedEvent} 
+              user={user}
+              onRoundSelect={handleRoundSelected} 
+              onTriggerLogin={handleTriggerLogin}
+              t={t}
+            />
+          )}
+          {currentStep === 'LOGIN' && <Login onLogin={handleLoginSuccess} t={t} />}
+          {currentStep === 'QUEUE' && <QueueRoom onFinished={handleQueueFinished} event={selectedEvent!} />}
+          {currentStep === 'SEATING' && selectedEvent && selectedRound && (
+            <SeatingPlan 
+              event={selectedEvent} 
+              selectedRound={selectedRound}
+              bookings={bookings}
+              user={user!}
+              onConfirm={handleSeatsConfirmed} 
+              t={t}
+            />
+          )}
+          {currentStep === 'PAYMENT' && selectedEvent && (
+            <Payment 
+              event={selectedEvent} 
+              seats={selectedSeats} 
+              timer={bookingTimer}
+              total={validatedTotal || 0}
+              onSuccess={handlePaymentSuccess}
+              t={t}
+            />
+          )}
+          {currentStep === 'CONFIRMATION' && selectedEvent && (
+            <Confirmation 
+              event={selectedEvent} 
+              seats={selectedSeats} 
+              orderId={bookings[0]?.orderId || ''}
+              onViewBookings={handleGoToMyBookings}
+              onBookAnother={handleReturnHome}
+              t={t}
+            />
+          )}
+          {currentStep === 'MY_BOOKINGS' && (
+            <MyBookings 
+              bookings={bookings} 
+              onExplore={handleGoToBrowseAll} 
+              onBack={handleReturnHome}
+              t={t}
+            />
+          )}
+        </div>
       </main>
 
       {/* Real-time Notification System UI */}

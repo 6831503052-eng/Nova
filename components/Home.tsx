@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Event } from '../types';
+import { translations } from '../src/translations';
 
 const MOCK_EVENTS: Event[] = [
   {
@@ -70,7 +71,8 @@ const MOCK_EVENTS: Event[] = [
     stadiumLayoutType: 'ARENA',
     description: 'Spend your Valentine\'s Day with the one and only Cha Eun-woo in his highly anticipated solo fan meeting tour.',
     rounds: [{ id: '7a', date: 'Saturday, 14 Feb 2026', time: '18:00' }],
-    status: 'COMING_SOON'
+    status: 'COMING_SOON',
+    saleStartTime: '2026-05-20T10:00:00Z'
   }
 ];
 
@@ -78,12 +80,13 @@ interface HomeProps {
   onSelectEvent: (event: Event) => void;
   onBrowseAll: () => void;
   onLatestNews: () => void;
+  t: (key: keyof typeof translations['en']) => string;
 }
 
-const Home: React.FC<HomeProps> = ({ onSelectEvent, onBrowseAll, onLatestNews }) => {
+const Home: React.FC<HomeProps> = ({ onSelectEvent, onBrowseAll, onLatestNews, t }) => {
   return (
-    <div className="p-6 md:p-12 max-w-7xl mx-auto animate-fadeIn relative">
-      <section className="mb-12 relative overflow-hidden rounded-3xl h-[500px] flex items-center p-8 md:p-16">
+    <div className="p-4 md:p-8 lg:p-12 max-w-7xl mx-auto animate-fadeIn relative">
+      <section className="mb-8 md:mb-12 relative overflow-hidden rounded-3xl h-[400px] md:h-[500px] flex items-center p-6 md:p-16">
         <div className="absolute inset-0 z-0">
           <img 
             src="https://images.unsplash.com/photo-1429962714451-bb934ecbb4ec?q=80&w=2000&auto=format&fit=crop" 
@@ -92,37 +95,37 @@ const Home: React.FC<HomeProps> = ({ onSelectEvent, onBrowseAll, onLatestNews })
           <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent"></div>
         </div>
         
-        <div className="relative z-10 max-w-2xl">
-          <h1 className="text-5xl md:text-7xl font-black mb-6 leading-none">
-            UNFORGETTABLE <br/>
-            <span className="bg-gradient-to-r from-rose-500 to-purple-600 bg-clip-text text-transparent italic">MOMENTS</span>
+        <div className="relative z-10 max-w-2xl px-2 sm:px-0">
+          <h1 className="text-3xl sm:text-5xl md:text-7xl font-black mb-4 md:mb-6 leading-[1.1] md:leading-none">
+            {t('unforgettableMoments').split(' ')[0]} <br className="hidden sm:block"/>
+            <span className="bg-gradient-to-r from-rose-500 to-purple-600 bg-clip-text text-transparent italic">{t('unforgettableMoments').split(' ')[1]}</span>
           </h1>
-          <p className="text-neutral-300 text-lg mb-8 leading-relaxed">
-            The world's biggest acts are landing in Thailand. Secure your spot in history with the most reliable booking experience.
+          <p className="text-neutral-300 text-sm md:text-lg mb-6 md:mb-8 leading-relaxed max-w-lg">
+            {t('heroSub')}
           </p>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-3 md:gap-4">
             <button 
               onClick={onLatestNews}
-              className="bg-rose-600 hover:bg-rose-500 px-8 py-4 rounded-xl font-bold transition-all shadow-lg shadow-rose-900/40 active:scale-95 min-h-[44px] text-base"
+              className="bg-rose-600 hover:bg-rose-500 px-6 md:px-8 py-3 md:py-4 rounded-xl font-bold transition-all shadow-lg shadow-rose-900/40 active:scale-95 min-h-[44px] text-sm md:text-base"
             >
-              Latest News
+              {t('latestNews')}
             </button>
             <button 
               onClick={onBrowseAll}
-              className="bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 px-8 py-4 rounded-xl font-bold transition-all active:scale-95 min-h-[44px] text-base text-white"
+              className="bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 px-6 md:px-8 py-3 md:py-4 rounded-xl font-bold transition-all active:scale-95 min-h-[44px] text-sm md:text-base text-white"
             >
-              Browse All Events
+              {t('browseAll')}
             </button>
           </div>
         </div>
       </section>
 
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="text-3xl font-bold tracking-tight">Trending Events</h2>
-        <button onClick={onBrowseAll} className="text-rose-500 font-bold hover:underline text-base min-h-[44px] px-4">View All</button>
+      <div className="flex items-center justify-between mb-6 md:mb-8">
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight">{t('trendingEvents')}</h2>
+        <button onClick={onBrowseAll} className="text-rose-500 font-bold hover:underline text-sm md:text-base min-h-[44px] px-2 md:px-4">{t('viewAll')}</button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
         {MOCK_EVENTS.map((event) => (
           <div 
             key={event.id}
@@ -140,8 +143,8 @@ const Home: React.FC<HomeProps> = ({ onSelectEvent, onBrowseAll, onLatestNews })
               {/* Availability Indicator */}
               <div className="absolute top-4 right-4">
                 {event.status === 'SOLD_OUT' ? (
-                  <span className="bg-neutral-950/80 backdrop-blur-md text-neutral-400 text-[10px] font-black px-3 py-1.5 rounded-full border border-white/10 uppercase tracking-widest">
-                    Sold Out
+                   <span className="bg-neutral-950/80 backdrop-blur-md text-neutral-400 text-[10px] font-black px-3 py-1.5 rounded-full border border-white/10 uppercase tracking-widest">
+                    {t('soldOut').split(' / ')[0]}
                   </span>
                 ) : event.status === 'COMING_SOON' ? (
                   <span className="bg-purple-600/80 backdrop-blur-md text-white text-[10px] font-black px-3 py-1.5 rounded-full border border-purple-400/30 uppercase tracking-widest">
@@ -173,13 +176,13 @@ const Home: React.FC<HomeProps> = ({ onSelectEvent, onBrowseAll, onLatestNews })
                 </div>
                 <button 
                   className={`px-4 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all min-h-[44px] flex items-center justify-center ${
-                    event.status === 'SOLD_OUT' 
+                    event.status === 'SOLD_OUT' || event.status === 'COMING_SOON'
                     ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed' 
                     : 'bg-rose-600 text-white hover:bg-rose-500 shadow-lg shadow-rose-900/20'
                   }`}
-                  disabled={event.status === 'SOLD_OUT'}
+                  disabled={event.status === 'SOLD_OUT' || event.status === 'COMING_SOON'}
                 >
-                  {event.status === 'SOLD_OUT' ? 'Sold Out' : 'Buy Tickets'}
+                  {event.status === 'SOLD_OUT' ? t('soldOut').split(' / ')[0] : event.status === 'COMING_SOON' ? 'SOON' : t('buyTickets')}
                 </button>
               </div>
             </div>

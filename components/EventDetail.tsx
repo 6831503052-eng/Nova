@@ -1,18 +1,23 @@
 
 import React, { useState } from 'react';
 import { Event, PerformanceRound, User } from '../types';
+import { translations } from '../src/translations';
 
 interface EventDetailProps {
   event: Event;
   user: User | null;
   onRoundSelect: (round: PerformanceRound) => void;
   onTriggerLogin?: () => void;
+  t: (key: keyof typeof translations['en']) => string;
 }
 
-const EventDetail: React.FC<EventDetailProps> = ({ event, user, onRoundSelect, onTriggerLogin }) => {
+const EventDetail: React.FC<EventDetailProps> = ({ event, user, onRoundSelect, onTriggerLogin, t }) => {
   const [selectedRoundId, setSelectedRoundId] = useState<string | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const saleStarted = !event.saleStartTime || new Date() >= new Date(event.saleStartTime);
+  const isComingSoon = event.status === 'COMING_SOON' && !saleStarted;
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -65,7 +70,7 @@ const EventDetail: React.FC<EventDetailProps> = ({ event, user, onRoundSelect, o
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-12 animate-fadeIn relative">
+    <div className="max-w-6xl mx-auto p-4 md:p-8 lg:p-12 animate-fadeIn relative">
       {/* Dynamic Toast Notification */}
       {toastMessage && (
         <div className="fixed top-20 right-4 bg-neutral-900 border border-white/10 text-white px-6 py-3 rounded-2xl shadow-2xl z-[100] animate-bounce flex items-center gap-3">
@@ -112,29 +117,40 @@ const EventDetail: React.FC<EventDetailProps> = ({ event, user, onRoundSelect, o
         <div className="lg:w-2/3 space-y-8">
           <div>
             <div className="inline-block px-4 py-1 rounded-full bg-rose-600/20 text-rose-500 text-[10px] font-black uppercase tracking-widest mb-4 border border-rose-600/30">
-              Official Tickets
+              {t('officialTickets')}
             </div>
-            <h1 className="text-4xl md:text-6xl font-black mb-4 leading-tight">{event.title}</h1>
-            <div className="flex flex-wrap gap-6 text-neutral-400">
+            <h1 className="text-2xl sm:text-4xl md:text-6xl font-black mb-4 leading-tight">{event.title}</h1>
+            
+            {isComingSoon && (
+              <div className="mb-6 p-4 rounded-2xl bg-purple-600/10 border border-purple-500/30 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-purple-600 flex items-center justify-center shrink-0 shadow-lg shadow-purple-900/40">
+                  <i className="fas fa-clock text-xl text-white"></i>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-purple-400">Tickets sale starts on</p>
+                  <p className="text-lg font-black text-white">
+                    {new Date(event.saleStartTime!).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-3 md:gap-6 text-neutral-400">
               <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
                 <i className="fas fa-calendar-day text-rose-500"></i>
-                <span className="text-sm font-bold">{event.date}</span>
+                <span className="text-xs md:text-sm font-bold">{event.date}</span>
               </div>
               <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
                 <i className="fas fa-location-dot text-rose-500"></i>
-                <span className="text-sm font-bold">{event.venue}</span>
-              </div>
-              <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
-                <i className="fas fa-tags text-rose-500"></i>
-                <span className="text-sm font-bold">{event.priceRange}</span>
+                <span className="text-xs md:text-sm font-bold">{event.venue}</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-neutral-900/50 border border-white/5 rounded-3xl p-8 space-y-4 shadow-xl">
+          <div className="bg-neutral-900/50 border border-white/5 rounded-2xl md:rounded-3xl p-6 md:p-8 space-y-4 shadow-xl">
             <h3 className="text-xl font-black flex items-center gap-3">
                <span className="w-1.5 h-6 bg-rose-600 rounded-full"></span>
-               About Event
+               {t('home')}
             </h3>
             <p className="text-neutral-400 leading-relaxed">
               {event.description}
@@ -145,7 +161,7 @@ const EventDetail: React.FC<EventDetailProps> = ({ event, user, onRoundSelect, o
             <div className="flex items-center justify-between">
               <h3 className="text-2xl font-bold flex items-center gap-3">
                 <i className="fas fa-clock text-rose-600"></i>
-                Performance Rounds
+                {t('viewAll')}
               </h3>
               <span className="text-neutral-500 text-[10px] font-black uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full border border-white/5">
                 {event.rounds.length} {event.rounds.length > 1 ? 'Show Dates' : 'Date Available'}
@@ -158,14 +174,14 @@ const EventDetail: React.FC<EventDetailProps> = ({ event, user, onRoundSelect, o
               {event.rounds.map((round) => (
                 <button
                   key={round.id}
-                  onClick={() => event.status !== 'SOLD_OUT' && setSelectedRoundId(round.id)}
-                  disabled={event.status === 'SOLD_OUT'}
+                  onClick={() => event.status !== 'SOLD_OUT' && !isComingSoon && setSelectedRoundId(round.id)}
+                  disabled={event.status === 'SOLD_OUT' || isComingSoon}
                   className={`
                     p-6 rounded-2xl border-2 text-left transition-all relative overflow-hidden group
                     ${selectedRoundId === round.id 
                       ? 'bg-rose-600/10 border-rose-600 shadow-[0_10px_30px_rgba(225,29,72,0.15)]' 
                       : 'bg-black border-white/10 hover:border-white/30'}
-                    ${event.status === 'SOLD_OUT' ? 'opacity-50 cursor-not-allowed grayscale' : ''}
+                    ${(event.status === 'SOLD_OUT' || isComingSoon) ? 'opacity-50 cursor-not-allowed grayscale' : ''}
                   `}
                 >
                   <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-1">Performance</p>
@@ -188,19 +204,19 @@ const EventDetail: React.FC<EventDetailProps> = ({ event, user, onRoundSelect, o
 
           <div className="pt-8">
             <button
-              disabled={!selectedRoundId || event.status === 'SOLD_OUT'}
+              disabled={!selectedRoundId || event.status === 'SOLD_OUT' || isComingSoon}
               onClick={() => {
                 const round = event.rounds.find(r => r.id === selectedRoundId);
                 if (round) onRoundSelect(round);
               }}
               className={`
                 w-full py-5 rounded-2xl font-black text-xl uppercase tracking-[0.1em] transition-all
-                ${selectedRoundId && event.status !== 'SOLD_OUT'
+                ${selectedRoundId && event.status !== 'SOLD_OUT' && !isComingSoon
                   ? 'bg-rose-600 hover:bg-rose-500 shadow-xl shadow-rose-900/40 active:scale-[0.98]' 
                   : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'}
               `}
             >
-              {event.status === 'SOLD_OUT' ? 'Sold Out' : selectedRoundId ? 'Get Tickets Now' : 'Select a Date First'}
+              {isComingSoon ? 'TICKET SALE NOT STARTED' : event.status === 'SOLD_OUT' ? t('soldOut').split(' / ')[0] : selectedRoundId ? t('buyTickets') : t('selectSeatsFirst')}
             </button>
             <div className="flex flex-col items-center gap-4 mt-6">
                <p className="text-xs text-neutral-500 flex items-center gap-2">

@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Event, Seat, Booking, PerformanceRound, User } from '../types';
 import { io, Socket } from 'socket.io-client';
+import { translations } from '../src/translations';
 
 interface SeatingPlanProps {
   event: Event;
@@ -9,6 +10,7 @@ interface SeatingPlanProps {
   bookings: Booking[];
   user: User;
   onConfirm: (seats: string[]) => void;
+  t: (key: keyof typeof translations['en']) => string;
 }
 
 const ZONE_CONFIG = [
@@ -21,11 +23,12 @@ const ZONE_CONFIG = [
 const ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 const COLS = Array.from({ length: 16 }, (_, i) => i + 1);
 
-const SeatingPlan: React.FC<SeatingPlanProps> = ({ event, selectedRound, bookings, user, onConfirm }) => {
+const SeatingPlan: React.FC<SeatingPlanProps> = ({ event, selectedRound, bookings, user, onConfirm, t }) => {
   const [seats, setSeats] = useState<Seat[]>();
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [hoveredSeat, setHoveredSeat] = useState<Seat | null>(null);
   const [lockedByOthers, setLockedByOthers] = useState<Record<string, string>>({}); // seatId -> userId
+  const [globalSoldSeats, setGlobalSoldSeats] = useState<Set<string>>(new Set());
   const socketRef = useRef<Socket | null>(null);
 
   const roomId = `${event.id}-${selectedRound.id}`;
@@ -47,6 +50,20 @@ const SeatingPlan: React.FC<SeatingPlanProps> = ({ event, selectedRound, booking
         }
       }
       setLockedByOthers(othersLocks);
+    });
+
+    socketRef.current.on('initial-sold-seats', (soldSeatIds: string[]) => {
+      setGlobalSoldSeats(new Set(soldSeatIds));
+    });
+
+    socketRef.current.on('seats-sold', (newSoldSeats: string[]) => {
+      setGlobalSoldSeats(prev => {
+        const next = new Set(prev);
+        newSoldSeats.forEach(s => next.add(s));
+        return next;
+      });
+      // Deselect if we had them selected locally but someone else bought them
+      setSelectedSeats(prev => prev.filter(s => !newSoldSeats.includes(s)));
     });
 
     socketRef.current.on('seat-locked', ({ seatId, userId }: { seatId: string, userId: string }) => {
@@ -89,8 +106,8 @@ const SeatingPlan: React.FC<SeatingPlanProps> = ({ event, selectedRound, booking
       COLS.forEach(col => {
         const seatId = `${row}${col}`;
         
-        // If seat is in our permanent bookings list, it's 'sold'
-        const isPermanentlySold = bookedSeatIds.has(seatId);
+        // If seat is in our permanent bookings list OR in global sold seats from socket
+        const isPermanentlySold = bookedSeatIds.has(seatId) || globalSoldSeats.has(seatId);
 
         initialSeats.push({
           id: seatId,
@@ -104,7 +121,7 @@ const SeatingPlan: React.FC<SeatingPlanProps> = ({ event, selectedRound, booking
       });
     });
     setSeats(initialSeats);
-  }, [event.id, selectedRound.id, bookings]);
+  }, [event.id, selectedRound.id, bookings, globalSoldSeats]);
 
   const toggleSeat = (id: string) => {
     const seat = seats?.find(s => s.id === id);
@@ -131,7 +148,7 @@ const SeatingPlan: React.FC<SeatingPlanProps> = ({ event, selectedRound, booking
     return sum + (seat?.price || 0);
   }, 0);
 
-  if (!seats) return <div className="p-12 text-center text-neutral-500">Loading seating chart...</div>;
+  if (!seats) return <div className="p-12 text-center text-neutral-500">{t('loadingSeating')}</div>;
 
   return (
     <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-black">
@@ -142,15 +159,15 @@ const SeatingPlan: React.FC<SeatingPlanProps> = ({ event, selectedRound, booking
              <div className="w-4 h-4 rounded bg-neutral-800 border border-white/5 flex items-center justify-center">
                <i className="fas fa-times text-[8px] text-neutral-600"></i>
              </div>
-             <span className="text-[10px] font-bold uppercase text-neutral-500">Sold Out / Already Booked</span>
+             <span className="text-[10px] font-bold uppercase text-neutral-500">{t('soldOut')}</span>
            </div>
            <div className="flex items-center gap-2">
              <div className="w-4 h-4 rounded bg-amber-500/20 border border-amber-500 animate-pulse"></div>
-             <span className="text-[10px] font-bold uppercase text-neutral-500">Reserved (Holding)</span>
+             <span className="text-[10px] font-bold uppercase text-neutral-500">{t('reserved')}</span>
            </div>
            <div className="flex items-center gap-2">
              <div className="w-4 h-4 rounded bg-emerald-500 border border-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
-             <span className="text-[10px] font-bold uppercase text-neutral-500">Your Selection</span>
+             <span className="text-[10px] font-bold uppercase text-neutral-500">{t('yourSelection')}</span>
            </div>
         </div>
         
@@ -175,7 +192,7 @@ const SeatingPlan: React.FC<SeatingPlanProps> = ({ event, selectedRound, booking
           <div className="relative mb-24 mt-8 flex justify-center">
             <div className="w-full max-w-3xl h-20 bg-gradient-to-b from-neutral-800 to-neutral-900 rounded-t-[150px] border-t-4 border-rose-600 flex items-center justify-center shadow-[0_-15px_60px_rgba(225,29,72,0.3)]">
               <div className="flex flex-col items-center">
-                <span className="text-rose-600 uppercase tracking-[1em] font-black text-lg animate-pulse">S T A G E</span>
+                <span className="text-rose-600 uppercase tracking-[1em] font-black text-lg animate-pulse">{t('stage')}</span>
                 <div className="flex gap-4 mt-2">
                    <div className="w-1 h-1 bg-rose-500 rounded-full animate-ping"></div>
                    <div className="w-1 h-1 bg-rose-500 rounded-full animate-ping delay-150"></div>
@@ -196,11 +213,11 @@ const SeatingPlan: React.FC<SeatingPlanProps> = ({ event, selectedRound, booking
           </div>
 
           {/* Seating Arrangement */}
-          <div className="grid gap-4 select-none perspective-1000 mb-20">
+          <div className="grid gap-2 md:gap-4 select-none perspective-1000 mb-20 overflow-x-auto pb-8 scrollbar-hide w-full">
             {ROWS.map(row => (
-              <div key={row} className="flex items-center justify-center gap-2 md:gap-4">
-                <div className="w-8 text-neutral-600 font-black text-xs text-center">{row}</div>
-                <div className="flex gap-1 md:gap-2">
+              <div key={row} className="flex items-center justify-start md:justify-center gap-1.5 md:gap-4 min-w-max px-4">
+                <div className="w-6 md:w-8 text-neutral-600 font-black text-[10px] md:text-xs text-center shrink-0">{row}</div>
+                <div className="flex gap-0.5 md:gap-2">
                   {COLS.map((col, idx) => {
                     const id = `${row}${col}`;
                     const seat = seats.find(s => s.id === id);
@@ -215,14 +232,14 @@ const SeatingPlan: React.FC<SeatingPlanProps> = ({ event, selectedRound, booking
 
                     return (
                       <React.Fragment key={id}>
-                        {isGap && <div className="w-4 md:w-8"></div>}
+                        {isGap && <div className="w-2 md:w-8"></div>}
                         <button
                           onMouseEnter={() => setHoveredSeat(seat)}
                           onMouseLeave={() => setHoveredSeat(null)}
                           onClick={() => toggleSeat(id)}
                           disabled={isSold || isReserved}
                           className={`
-                            w-5 h-5 md:w-7 md:h-7 rounded-md text-[9px] font-bold transition-all duration-150 border relative flex items-center justify-center
+                            w-4 h-4 sm:w-5 sm:h-5 md:w-7 md:h-7 rounded-sm md:rounded-md text-[7px] md:text-[9px] font-bold transition-all duration-150 border relative flex items-center justify-center
                             ${isSold ? 'bg-neutral-900 border-white/5 cursor-not-allowed opacity-40' : ''}
                             ${isReserved ? 'bg-amber-500/20 border-amber-500 animate-pulse cursor-not-allowed shadow-[0_0_10px_rgba(245,158,11,0.3)]' : ''}
                             ${isSelected ? 'bg-emerald-500 border-emerald-300 text-white scale-110 shadow-[0_0_15px_rgba(16,185,129,0.7)] z-10' : ''}
@@ -232,7 +249,7 @@ const SeatingPlan: React.FC<SeatingPlanProps> = ({ event, selectedRound, booking
                           {isSold ? (
                             <i className="fas fa-times text-neutral-700"></i>
                           ) : isReserved ? (
-                            <i className="fas fa-user-clock text-amber-500 text-[7px]"></i>
+                            <i className="fas fa-user-clock text-amber-500 text-[6px] md:text-[7px]"></i>
                           ) : isSelected ? (
                             <i className="fas fa-check"></i>
                           ) : (
@@ -243,7 +260,7 @@ const SeatingPlan: React.FC<SeatingPlanProps> = ({ event, selectedRound, booking
                     );
                   })}
                 </div>
-                <div className="w-8 text-neutral-600 font-black text-xs text-center">{row}</div>
+                <div className="w-6 md:w-8 text-neutral-600 font-black text-[10px] md:text-xs text-center">{row}</div>
               </div>
             ))}
           </div>
@@ -273,18 +290,18 @@ const SeatingPlan: React.FC<SeatingPlanProps> = ({ event, selectedRound, booking
       <div className="bg-neutral-900 border-t border-white/10 p-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-6 z-50">
         <div className="flex flex-col md:flex-row items-center gap-8 w-full md:w-auto">
           <div className="flex flex-col items-center md:items-start">
-            <span className="text-neutral-500 text-[10px] font-black uppercase tracking-widest mb-2">Selected ({selectedSeats.length}/3)</span>
+            <span className="text-neutral-500 text-[10px] font-black uppercase tracking-widest mb-2">{t('selected')} ({selectedSeats.length}/3)</span>
             <div className="flex flex-wrap gap-2 justify-center">
               {selectedSeats.length > 0 ? selectedSeats.map(s => (
                 <div key={s} className="bg-emerald-600 text-white px-3 py-1 rounded-lg text-sm font-black shadow-lg shadow-emerald-900/20 animate-fadeIn">{s}</div>
               )) : (
-                <span className="text-neutral-600 text-sm italic">Please select your seats</span>
+                <span className="text-neutral-600 text-sm italic">{t('pleaseSelectSeats')}</span>
               )}
             </div>
           </div>
           <div className="hidden md:block h-12 w-[1px] bg-white/10"></div>
           <div className="flex flex-col items-center md:items-start">
-            <span className="text-neutral-500 text-[10px] font-black uppercase tracking-widest mb-1">Total Payable</span>
+            <span className="text-neutral-500 text-[10px] font-black uppercase tracking-widest mb-1">{t('totalPayable')}</span>
             <span className="text-3xl font-black text-white">{totalPrice.toLocaleString()} <span className="text-sm font-normal text-neutral-500">THB</span></span>
           </div>
         </div>
@@ -299,7 +316,7 @@ const SeatingPlan: React.FC<SeatingPlanProps> = ({ event, selectedRound, booking
               : 'bg-neutral-800 text-neutral-600 cursor-not-allowed'}
           `}
         >
-          {selectedSeats.length > 0 ? 'Hold & Proceed' : 'Select Seats First'}
+          {selectedSeats.length > 0 ? t('holdAndProceed') : t('selectSeatsFirst')}
         </button>
       </div>
     </div>

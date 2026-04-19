@@ -8,17 +8,17 @@ interface QueueProps {
 }
 
 const QueueRoom: React.FC<QueueProps> = ({ event, onFinished }) => {
-  // Reduced initial position from 1240 to 150 for a faster experience
-  const INITIAL_POS = 150;
+  // Further reduced initial position for a much faster entry experience (approx 3-5 seconds)
+  const INITIAL_POS = 50;
   const [position, setPosition] = useState(INITIAL_POS);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setPosition((prev) => {
-        const next = prev - Math.floor(Math.random() * 10) - 5;
+        const next = prev - Math.floor(Math.random() * 8) - 4;
         return next > 0 ? next : 0;
       });
-    }, 800);
+    }, 500);
 
     return () => clearInterval(timer);
   }, []);

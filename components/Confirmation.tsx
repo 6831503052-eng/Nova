@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Event } from '../types';
+import { translations } from '../src/translations';
 
 interface ConfirmationProps {
   event: Event;
@@ -8,9 +9,10 @@ interface ConfirmationProps {
   orderId: string;
   onViewBookings: () => void;
   onBookAnother: () => void;
+  t: (key: keyof typeof translations['en']) => string;
 }
 
-const Confirmation: React.FC<ConfirmationProps> = ({ event, seats, orderId, onViewBookings, onBookAnother }) => {
+const Confirmation: React.FC<ConfirmationProps> = ({ event, seats, orderId, onViewBookings, onBookAnother, t }) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [showToast, setShowToast] = useState(false);
 

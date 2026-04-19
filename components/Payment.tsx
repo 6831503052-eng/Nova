@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Event } from '../types';
+import { translations } from '../src/translations';
 
 interface PaymentProps {
   event: Event;
@@ -8,9 +9,10 @@ interface PaymentProps {
   timer: number;
   total: number;
   onSuccess: () => void;
+  t: (key: keyof typeof translations['en']) => string;
 }
 
-const Payment: React.FC<PaymentProps> = ({ event, seats, timer, total, onSuccess }) => {
+const Payment: React.FC<PaymentProps> = ({ event, seats, timer, total, onSuccess, t }) => {
   const [method, setMethod] = useState<'CARD' | 'QR' | 'WALLET'>('CARD');
   const [isProcessing, setIsProcessing] = useState(false);
   const [cardData, setCardData] = useState({
@@ -86,44 +88,44 @@ const Payment: React.FC<PaymentProps> = ({ event, seats, timer, total, onSuccess
   const isFormValid = method !== 'CARD' || isCardComplete;
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 pb-24">
-      <div className="lg:col-span-2 space-y-6">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 pb-24">
+      <div className="lg:col-span-2 space-y-4 md:space-y-6">
         {/* Timer Header */}
         <div className="bg-rose-600/10 border border-rose-500/20 rounded-2xl p-4 flex items-center justify-between">
            <div className="flex items-center gap-3">
              <i className="fas fa-clock text-rose-500 animate-pulse"></i>
-             <span className="text-sm font-bold text-rose-500 uppercase tracking-wider">Seats held for:</span>
+             <span className="text-xs md:text-sm font-bold text-rose-500 uppercase tracking-wider">Seats held for:</span>
            </div>
-           <span className="text-2xl font-black tabular-nums text-rose-500">{formatTime(timer)}</span>
+           <span className="text-xl md:text-2xl font-black tabular-nums text-rose-500">{formatTime(timer)}</span>
         </div>
 
-        <section className="bg-neutral-900 border border-white/10 rounded-3xl p-6 md:p-8">
-          <h2 className="text-2xl font-bold mb-8 flex items-center gap-3">
-            <span className="w-8 h-8 rounded-full bg-purple-600 text-sm flex items-center justify-center">1</span>
+        <section className="bg-neutral-900 border border-white/10 rounded-3xl p-5 md:p-8">
+          <h2 className="text-xl md:text-2xl font-bold mb-6 md:mb-8 flex items-center gap-3">
+            <span className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-purple-600 text-xs md:text-sm flex items-center justify-center">1</span>
             Payment Method
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-8">
             <button 
               onClick={() => setMethod('CARD')}
-              className={`p-6 rounded-2xl border-2 transition-all flex flex-col items-center gap-4 ${method === 'CARD' ? 'bg-rose-600/10 border-rose-600 shadow-xl' : 'bg-black border-white/5 hover:border-white/20'}`}
+              className={`p-4 md:p-6 rounded-2xl border-2 transition-all flex flex-col items-center gap-3 md:gap-4 ${method === 'CARD' ? 'bg-rose-600/10 border-rose-600 shadow-xl' : 'bg-black border-white/5 hover:border-white/20'}`}
             >
-              <i className="fas fa-credit-card text-2xl"></i>
-              <span className="font-bold text-sm">Credit / Debit Card</span>
+              <i className="fas fa-credit-card text-xl md:text-2xl"></i>
+              <span className="font-bold text-xs md:text-sm">Credit / Debit Card</span>
             </button>
             <button 
               onClick={() => setMethod('QR')}
-              className={`p-6 rounded-2xl border-2 transition-all flex flex-col items-center gap-4 ${method === 'QR' ? 'bg-rose-600/10 border-rose-600 shadow-xl' : 'bg-black border-white/5 hover:border-white/20'}`}
+              className={`p-4 md:p-6 rounded-2xl border-2 transition-all flex flex-col items-center gap-3 md:gap-4 ${method === 'QR' ? 'bg-rose-600/10 border-rose-600 shadow-xl' : 'bg-black border-white/5 hover:border-white/20'}`}
             >
-              <i className="fas fa-qrcode text-2xl"></i>
-              <span className="font-bold text-sm">PromptPay QR</span>
+              <i className="fas fa-qrcode text-xl md:text-2xl"></i>
+              <span className="font-bold text-xs md:text-sm">PromptPay QR</span>
             </button>
             <button 
               onClick={() => setMethod('WALLET')}
-              className={`p-6 rounded-2xl border-2 transition-all flex flex-col items-center gap-4 ${method === 'WALLET' ? 'bg-rose-600/10 border-rose-600 shadow-xl' : 'bg-black border-white/5 hover:border-white/20'}`}
+              className={`p-4 md:p-6 rounded-2xl border-2 transition-all flex flex-col items-center gap-3 md:gap-4 ${method === 'WALLET' ? 'bg-rose-600/10 border-rose-600 shadow-xl' : 'bg-black border-white/5 hover:border-white/20'}`}
             >
-              <i className="fas fa-wallet text-2xl"></i>
-              <span className="font-bold text-sm">TrueMoney Wallet</span>
+              <i className="fas fa-wallet text-xl md:text-2xl"></i>
+              <span className="font-bold text-xs md:text-sm">TrueMoney Wallet</span>
             </button>
           </div>
 
@@ -207,7 +209,7 @@ const Payment: React.FC<PaymentProps> = ({ event, seats, timer, total, onSuccess
 
           <div className="border-t border-white/10 pt-4 mb-8">
             <div className="flex justify-between items-center">
-              <span className="text-lg font-bold">Grand Total</span>
+              <span className="text-lg font-bold">{t('totalPayable')}</span>
               <span className="text-2xl font-black text-rose-500">{total.toLocaleString()} THB</span>
             </div>
           </div>
@@ -220,7 +222,7 @@ const Payment: React.FC<PaymentProps> = ({ event, seats, timer, total, onSuccess
             {isProcessing ? (
                <><i className="fas fa-spinner fa-spin"></i> Processing...</>
             ) : (
-               <>Pay Now & Secure Tickets</>
+               <>{t('confirmBooking')}</>
             )}
           </button>
           

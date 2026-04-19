@@ -17,6 +17,8 @@ const EVENT_DATA: Record<string, {
   basePrice: number, 
   openingTime: number, // Timestamp
   notified5Min: boolean,
+  notified1Min: boolean,
+  notified30Sec: boolean,
   notifiedNow: boolean,
   zones: Record<string, number> // Zone name -> Price
 }> = {
@@ -26,6 +28,8 @@ const EVENT_DATA: Record<string, {
     basePrice: 2500, 
     openingTime: Date.now() - 100000, // Already open
     notified5Min: true,
+    notified1Min: true,
+    notified30Sec: true,
     notifiedNow: true,
     zones: { 'VVIP (Row A-B)': 15000, 'VIP (Row C-E)': 9500, 'Standing A': 6500, 'Standard (Row H-J)': 3500 }
   },
@@ -35,6 +39,8 @@ const EVENT_DATA: Record<string, {
     basePrice: 2500, 
     openingTime: Date.now() + 10 * 60 * 1000, // Opens in 10 minutes for demo
     notified5Min: false,
+    notified1Min: false,
+    notified30Sec: false,
     notifiedNow: false,
     zones: { 'VVIP (Row A-B)': 15000, 'VIP (Row C-E)': 9500, 'Standing A': 6500, 'Standard (Row H-J)': 3500 }
   }
@@ -42,6 +48,7 @@ const EVENT_DATA: Record<string, {
 
 // Persistent store for bookings (Server-side)
 const USER_BOOKINGS: Record<string, any[]> = {}; // email -> Booking[]
+const ALL_SOLD_SEATS: Record<string, string[]> = {}; // roomId -> seatId[]
 
 async function startServer() {
   const app = express();
@@ -70,6 +77,19 @@ async function startServer() {
       USER_BOOKINGS[email] = [];
     }
     USER_BOOKINGS[email].unshift(booking);
+
+    // Track global sold seats for real-time sync across all users
+    const roomId = `${booking.event.id}-${booking.roundId}`;
+    if (!ALL_SOLD_SEATS[roomId]) {
+      ALL_SOLD_SEATS[roomId] = [];
+    }
+    // Add unique seats to the global sold list
+    const newSeats = booking.seats.filter((s: string) => !ALL_SOLD_SEATS[roomId].includes(s));
+    ALL_SOLD_SEATS[roomId].push(...newSeats);
+
+    // Broadcast the new sold seats to everyone in the seating room
+    io.to(roomId).emit('seats-sold', newSeats);
+
     res.json({ success: true });
   });
 
@@ -132,22 +152,54 @@ async function startServer() {
       if (timeDiff > 0 && timeDiff <= 5 * 60 * 1000 && !event.notified5Min) {
         console.log(`Broadcasting 5-min notification for: ${event.title}`);
         io.emit('notification', {
+          id: `5min-${event.id}-${Date.now()}`,
           type: 'UPCOMING_SALE',
           title: 'Get Ready!',
           message: `Tickets for ${event.title} will be available in 5 minutes!`,
-          eventId: event.id
+          eventId: event.id,
+          timestamp: Date.now()
         });
         event.notified5Min = true;
       }
 
-      // 2. Exact Opening Notification
+      // 2. Pre-sale Notification (1 minute before)
+      if (timeDiff > 0 && timeDiff <= 1 * 60 * 1000 && !event.notified1Min) {
+        console.log(`Broadcasting 1-min notification for: ${event.title}`);
+        io.emit('notification', {
+          id: `1min-${event.id}-${Date.now()}`,
+          type: 'UPCOMING_SALE',
+          title: 'Almost there!',
+          message: `Only 1 minute left until ${event.title} tickets go live!`,
+          eventId: event.id,
+          timestamp: Date.now()
+        });
+        event.notified1Min = true;
+      }
+
+      // 3. Pre-sale Notification (30 seconds before)
+      if (timeDiff > 0 && timeDiff <= 30 * 1000 && !event.notified30Sec) {
+        console.log(`Broadcasting 30-sec notification for: ${event.title}`);
+        io.emit('notification', {
+          id: `30sec-${event.id}-${Date.now()}`,
+          type: 'UPCOMING_SALE',
+          title: 'GET READY!',
+          message: `Only 30 SECONDS LEFT! ${event.title} is about to open!`,
+          eventId: event.id,
+          timestamp: Date.now()
+        });
+        event.notified30Sec = true;
+      }
+
+      // 4. Exact Opening Notification
       if (timeDiff <= 0 && !event.notifiedNow) {
         console.log(`Broadcasting opening notification for: ${event.title}`);
         io.emit('notification', {
+          id: `now-${event.id}-${Date.now()}`,
           type: 'SALE_OPEN',
           title: 'Tickets are LIVE!',
           message: `Go go go! Tickets for ${event.title} are now available for booking.`,
-          eventId: event.id
+          eventId: event.id,
+          timestamp: Date.now()
         });
         event.notifiedNow = true;
       }
@@ -162,8 +214,13 @@ async function startServer() {
 
     socket.on('join-room', (roomId: string) => {
       socket.join(roomId);
+      // Sync initial locks
       if (lockedSeats[roomId]) {
         socket.emit('initial-locks', lockedSeats[roomId]);
+      }
+      // Sync initial sold seats from ALL users
+      if (ALL_SOLD_SEATS[roomId]) {
+        socket.emit('initial-sold-seats', ALL_SOLD_SEATS[roomId]);
       }
     });
 

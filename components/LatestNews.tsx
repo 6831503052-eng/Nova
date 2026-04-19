@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Event } from '../types';
+import { translations } from '../src/translations';
 
 interface NewsItem {
   id: string;
@@ -43,9 +44,10 @@ const COMING_SOON_EVENTS: Event[] = [
     priceRange: 'TBA',
     minPrice: 0,
     stadiumLayoutType: 'STADIUM',
-    description: 'The global pop sensation returns with her newest tour.',
-    rounds: [],
-    status: 'COMING_SOON'
+    description: 'The global pop sensation returns with her newest world tour with high production value.',
+    rounds: [{ id: 'cs1a', date: 'Tuesday, 10 Mar 2026', time: '19:00' }],
+    status: 'COMING_SOON',
+    saleStartTime: '2026-06-01T10:00:00Z'
   },
   {
     id: 'cs2',
@@ -56,17 +58,19 @@ const COMING_SOON_EVENTS: Event[] = [
     priceRange: 'TBA',
     minPrice: 0,
     stadiumLayoutType: 'ARENA',
-    description: 'The worlds premier electronic music festival returns.',
-    rounds: [],
-    status: 'COMING_SOON'
+    description: 'The worlds premier electronic music festival returns for a massive two-day event.',
+    rounds: [{ id: 'cs2a', date: 'Saturday, 18 Apr 2026', time: '14:00' }],
+    status: 'COMING_SOON',
+    saleStartTime: '2026-06-15T10:00:00Z'
   }
 ];
 
 interface LatestNewsProps {
   onSelectEvent: (event: Event) => void;
+  t: (key: keyof typeof translations['en']) => string;
 }
 
-const LatestNews: React.FC<LatestNewsProps> = ({ onSelectEvent }) => {
+const LatestNews: React.FC<LatestNewsProps> = ({ onSelectEvent, t }) => {
   const [notifiedEvents, setNotifiedEvents] = useState<string[]>([]);
   const [toast, setToast] = useState<string | null>(null);
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
@@ -139,7 +143,7 @@ const LatestNews: React.FC<LatestNewsProps> = ({ onSelectEvent }) => {
         <div className="lg:w-2/3 space-y-8">
            <h1 className="text-4xl font-black mb-8 flex items-center gap-4">
              <i className="fas fa-newspaper text-rose-500"></i>
-             Latest News
+             {t('latestNews')}
            </h1>
            
            <div className="space-y-6">
@@ -176,7 +180,11 @@ const LatestNews: React.FC<LatestNewsProps> = ({ onSelectEvent }) => {
            
            <div className="space-y-6">
              {COMING_SOON_EVENTS.map(event => (
-               <div key={event.id} className="bg-neutral-900/50 border border-white/5 rounded-2xl p-4 group">
+               <div 
+                 key={event.id} 
+                 className="bg-neutral-900/50 border border-white/5 rounded-2xl p-4 group cursor-pointer hover:border-white/20 transition-all"
+                 onClick={() => onSelectEvent(event)}
+               >
                  <div className="relative aspect-video rounded-xl overflow-hidden mb-4">
                    <img src={event.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -187,7 +195,7 @@ const LatestNews: React.FC<LatestNewsProps> = ({ onSelectEvent }) => {
                  <div className="flex items-center justify-between">
                    <p className="text-xs text-neutral-500 font-bold">{event.date}</p>
                    <button 
-                     onClick={() => toggleNotify(event.id, event.title)}
+                     onClick={(e) => { e.stopPropagation(); toggleNotify(event.id, event.title); }}
                      className={`text-xs font-black px-4 py-3 rounded-lg transition-all min-h-[44px] ${notifiedEvents.includes(event.id) ? 'bg-rose-600 text-white' : 'bg-neutral-800 text-rose-500 hover:bg-neutral-700 border border-neutral-700'}`}
                    >
                      <i className={`${notifiedEvents.includes(event.id) ? 'fas' : 'far'} fa-bell mr-2`}></i>
