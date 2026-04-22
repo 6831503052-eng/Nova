@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Event, Seat, Booking, PerformanceRound, User } from '../types';
 import { io, Socket } from 'socket.io-client';

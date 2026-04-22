@@ -135,17 +135,14 @@ const App: React.FC = () => {
     
     setSelectedSeats(seats);
     
-    try {
-  const res = await fetch("/api/checkout/validate", {...});
-  return await res.json();
-} catch {
-  return {
-    success: true,
-    total: seats.length * 1500 + 200,
-    token: "mock-token"
-  };
-}
-      /*
+   try {
+      // Secure Price Validation (Backend as Single Source of Truth)
+      const response = await fetch('/api/checkout/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId: selectedEvent.id, seats })
+      });
+      
       const data = await response.json();
       if (data.success) {
         setValidatedTotal(data.total);
@@ -160,7 +157,6 @@ const App: React.FC = () => {
       alert('Network error during price validation.');
     }
   };
-*/
   const handlePaymentSuccess = async () => {
     const now = new Date();
     const dateStr = now.getFullYear().toString() + 
